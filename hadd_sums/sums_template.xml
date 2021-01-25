@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<job maxFilesPerProcess="&maxFilesPerProcess;" simulateSubmission="&simulateSubmission;" >
+	<command>
+        echo "Where are my files: ${FILELIST}"
+        echo starting hadd
+        hadd hadd_${JOBID}.root @${FILELIST}
+        echo done!
+        ls
+	</command>
+    <stdout URL="file:./sums/out/$JOBID" />	
+    <stderr URL="file:./sums/err/$JOBID" />
+    <output fromScratch="hadd_${JOBID}.root" 
+        toURL="file:&outpath;/"/>
+    <input URL="filelist:&infile_list;" />
+
+	<Generator>
+        <Location>./sums/input/</Location>
+        <ScriptLocation>./sums/input/</ScriptLocation>
+        <ListLocation>./sums/input/</ListLocation>
+	</Generator>
+</job>
