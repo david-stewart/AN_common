@@ -132,7 +132,7 @@ ClassImp(mupicoEventHeader)
         BBC_Ein{_BBC_Ein}, BBC_Eout{_BBC_Eout},
         BBC_Win{_BBC_Win}, BBC_Wout{_BBC_Wout},
         vzVpd{_vzVpd}, ranking{_ranking},
-        ZdcSumAdcEast{_ZdcSumAdcEast}, ZdcSumAdcWest{ZdcSumAdcWest}
+        ZdcSumAdcEast{_ZdcSumAdcEast}, ZdcSumAdcWest{_ZdcSumAdcWest}
     {};
 
 ClassImp(mupicoJetwArea)

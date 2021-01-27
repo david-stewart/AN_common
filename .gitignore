@@ -1,3 +1,5 @@
 hadd_sums/_
 _*
-
+*.so
+*.pcm
+*.d
