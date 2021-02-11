@@ -7,7 +7,10 @@
 #include "TObject.h"
 #include "TTree.h"
 
+static const float __loc_pi  { 3.14159265359 };
+static const float __loc_2pi { 6.28318530718 };
 using namespace std;
+float __0to2pi(float _phi_in); // put phi in range 0..2pi
 
 class myTriggers : public TObject {
     public:
@@ -26,34 +29,49 @@ class myTriggers : public TObject {
 };
 
 // Same track object as for PicoToTree
+/* class Track_id; */
 struct mupicoTrack : public TObject {
 	public:
     mupicoTrack() ;
-    mupicoTrack(float _pT, float _phi, float _eta, 
-            float _dcaXY, float _dcaXYZ, 
-            bool _TOF_match, bool _BEMC_match, 
-            short _i_tower, 
+    mupicoTrack(
+            float _pt, 
+            float _eta, 
+            float _phi, 
+            float _dcaXY, 
+            float _dcaXYZ, 
+
+            bool _TOF_match, 
+            bool _BEMC_match, 
+
+            short _towerID, 
+            float _towerEt, // Et of the matched tower
+
             short _nhitsfit, 
             short _nhitsposs,
-            short _nhitsdedx
+            short _nhitsdedx,
+            bool  _pass_cuts
     );
+    /* mupicoTrack(const Track_id&); */
 	virtual ~mupicoTrack() {};
-    float   pT;
-    float   phi;
+    float   pt;
     float   eta;
+    float   phi;
     float   dcaXY;
     float   dcaXYZ;
     bool    TOF_match;
     bool    BEMC_match;
-    short   i_tower; // i_tower < 0 is an approx match, > 0 is an exact match
+
+    short   towerID; // towerID < 0 is an approx match, > 0 is an exact match
+    float   towerEt;
+
     short   nHitsFit;
     short   nHitsPoss;
-    short   nHitsdEdx;
-    bool operator < (const mupicoTrack& rhs) const; // const { return pT > rhs.pT; };
+    short   nHitsDedx;
+    bool    pass_cuts; // local convenience; for sake of locally changing which tracks pass cuts
+    bool operator < (const mupicoTrack& rhs) const; // const { return pt > rhs.pt; };
 	ClassDef(mupicoTrack,1);
 };
 
-// 
 class mupicoTower : public TObject {
 	public:
     mupicoTower();
@@ -61,71 +79,56 @@ class mupicoTower : public TObject {
 
     mupicoTower(
         const float _Et, 
-        const float _phi,
         const float _eta, 
+        const float _phi,
         const float _Et_hadroncorr,
-        const short _i_tower
+        const short _towerID
     ) ;
     float   Et;
-    float   phi;
     float   eta;
+    float   phi;
     float   Et_hadroncorr; // correction from charged tracks. Positive value.
-    short   i_tower;
+    short   towerID;
     bool operator < (const mupicoTower & rhs) const;
 	ClassDef(mupicoTower,1);
 };
 
 // geantid can be used to get particle charge
-class embReconTrack : public TObject {
+class embTrack : public TObject {
     public:
-    embReconTrack(); 
-    embReconTrack(
-        int _geantId, bool _is_matched, 
-        bool _pass_cuts,
-        float _ptMc,  float _etaMc,  float _phiMc,
-        short _nHitMc, 
-        float _ptPr, float _etaPr, float _phiPr,
-        float _dcaGl, float _dcaXYGl,
-        short _fitPts, short _nPossiblePts, short _dedxPts
+    embTrack(); 
+    embTrack(
+        short _geantId, 
+        short _id, // id to mupicoTrack (from MuDst); 
+                      // -2 if not matched
+                      // -1 if matched but not mupicoTrack not written (becuase high |eta|, etc...)
+        float _pt,  
+        float _eta,  
+        float _phi
+        /* short _nHit //, */  
+        /* float _ptPr, float _etaPr, float _phiPr, */
+        /* float _dcaGl, float _dcaXYGl, */
+        /* short _fitPts, short _nPossiblePts, short _dedxPts */
     ); 
 
-	virtual ~embReconTrack() {};
-
-    int geantId;
-
-    bool  is_matched; 
-    bool  pass_cuts; 
-
-    float ptMc; 
-    float etaMc;
-    float phiMc;
-    short nHitMc;
-
-    float ptPr;
-    float etaPr;
-    float phiPr;
-
-    float dcaGl;
-    float dcaXYGl;
-
-    short   fitPts;
-    short   nPossiblePts;
-    short   dedxPts;
-
-
-	ClassDef(embReconTrack,1);
+	virtual ~embTrack() {};
+    short geantId;
+    short id; 
+    float pt; 
+    float eta;
+    float phi;
+	ClassDef(embTrack,1);
 };
 
 class embNeutPart : public TObject {
     public:
     embNeutPart(); 
-    embNeutPart(int _geantId, float _ptMc, float _etatMc, float _phiMc); 
+    embNeutPart(short _geantId, float _pt, float _etat, float _phi);
 
-    int geantId;
-
-    float ptMc;
-    float etaMc;
-    float phiMc;
+    short geantId;
+    float pt;
+    float eta;
+    float phi;
 
     ClassDef (embNeutPart,1);
 };
@@ -169,25 +172,25 @@ class mupicoEventHeader : public TObject {
 //    /* _tree->Branch("WestBBC", west, "s[24]/s"); */
 
 // to be used with both charged and full jets
-class mupicoJetwArea : public TObject {
+class JetwArea : public TObject {
     public:
-    float pT;
-    float phi;
+    float pt;
     float eta;
+    float phi;
     float area;
-    mupicoJetwArea(float, float, float, float);
-    mupicoJetwArea();
-	ClassDef(mupicoJetwArea,1);
+    JetwArea(float _pt, float _eta, float _phi, float _area);
+    JetwArea();
+	ClassDef(JetwArea,1);
 };
 
-class mupicoJet : public TObject {
+class Jet : public TObject {
     public:
-    float pT;
-    float phi;
+    float pt;
     float eta;
-    mupicoJet(float, float, float);
-    mupicoJet();
-	ClassDef(mupicoJet,1);
+    float phi;
+    Jet(float _pt, float _eta, float _phi);
+    Jet();
+	ClassDef(Jet,1);
 };
 
 #endif

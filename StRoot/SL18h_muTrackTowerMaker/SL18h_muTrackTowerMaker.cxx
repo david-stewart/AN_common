@@ -1,4 +1,6 @@
-#include "P18h_mupicoTrackTowerMaker.h"
+#include "SL18h_muTrackTowerMaker.h"
+
+#include "TrackTowerMatcher/TrackTowerMatcher.h"
 
 #include "StEmcCollection.h"
 #include "StMuDSTMaker/COMMON/StMuTrack.h"
@@ -9,14 +11,20 @@
 #include "StEmcModule.h"
 #include "StEmcDetector.h"
 
-ClassImp(P18h_mupicoTrackTowerMaker)
+ClassImp(SL18h_muTrackTowerMaker)
 
-P18h_mupicoTrackTowerMaker::P18h_mupicoTrackTowerMaker (
+FloatInt::FloatInt (float _d, int _i) : f_val{_d}, i_val{_i} {};
+bool FloatInt::operator < (const FloatInt& rhs) const { return f_val > rhs.f_val; };
+
+
+SL18h_muTrackTowerMaker::SL18h_muTrackTowerMaker (
         StMuDstMaker* _muDstMaker,
         IntList&      _bad_tower_list,
         ofstream&     _log,
         St_db_Maker*  _starDb,
-        int           _debug_level
+        int           _debug_level,
+        int _MaxNTracks,
+        int _MaxNTowers
 ) :
     muDstMaker    {_muDstMaker},
     bad_tower_list(_bad_tower_list),
@@ -25,17 +33,76 @@ P18h_mupicoTrackTowerMaker::P18h_mupicoTrackTowerMaker (
     mEmcPosition  { new StEmcPosition },
     starDb        { _starDb },
     mBemcTables   {new StBemcTables},
-    debug_level   {_debug_level}
+    debug_level   {_debug_level},
+    MaxNTracks    {_MaxNTracks},
+    MaxNTowers    {_MaxNTowers}
 {
     if (debug_level > 0) cout << " ------------------- star_dB TIGER " << starDb << endl;
+    clear();
 };
 
-vector<mupicoTrack> P18h_mupicoTrackTowerMaker::makeVec_mupicoTracks(TrackTowerMatcher* matched_tower) {
-    vector<mupicoTrack>  vTracks;
+bool SL18h_muTrackTowerMaker::next_track(){
+    ++iTrack;
+    if (iTrack >= nTracks) {
+        iTrack = -1;
+        return false;
+    }
+    return true;
+};
+bool SL18h_muTrackTowerMaker::next_tower(){
+    ++iTower;
+    if (iTower >= nTowers) {
+        iTower = -1;
+        return false;
+    }
+    return true;
+};
+mupicoTrack& SL18h_muTrackTowerMaker::track() { 
+    return tracks[pt_track_order[iTrack]];
+};
+mupicoTower& SL18h_muTrackTowerMaker::tower() { 
+    return towers[iTower];
+};
+
+mupicoTrack& SL18h_muTrackTowerMaker::get_track(int i) {
+    return tracks[pt_track_order[i]];
+};
+mupicoTower& SL18h_muTrackTowerMaker::get_tower(int i) {
+    return towers[i];
+};
+/* short index() { */
+    /* return index_id(towers */
+/* }: */
+
+void SL18h_muTrackTowerMaker::clear() {
+    id_to_TrackIndex.clear();
+    pt_track_order.clear();
+    tracks.clear();
+    towers.clear();
+    id_set.clear();
+
+    nTracks = 0;
+    nTowers = 0;
+    iTrack  = -1;
+    iTower  = -1;
+};
+
+short SL18h_muTrackTowerMaker::index_id(int id) {
+    if (id_to_TrackIndex.count(id)) return id_to_TrackIndex[id];
+    if (id_set.count(id))           return -1;
+    return -2;
+};
+
+
+void SL18h_muTrackTowerMaker::make() {
+    clear();
+
+    // Get access to MuDst data
     StMuDst*         mMuDst         = muDstMaker->muDst();
     StMuEvent*       muEvent        = mMuDst->event();
 
-    float mBField = muEvent->magneticField(); // needed for tower matching
+    // get magetic field (needed for track to tower matching)
+    float mBField = muEvent->magneticField(); // needed for mupicoTower matching
     mBEMCGeom = StEmcGeom::instance("bemc");
     Double_t bemc_radius = mBEMCGeom->Radius();
     Double_t mBField_tesla = mBField / 10.0;
@@ -43,44 +110,57 @@ vector<mupicoTrack> P18h_mupicoTrackTowerMaker::makeVec_mupicoTracks(TrackTowerM
     if (debug_level == 1) cout << " mBField " << mBField_tesla << endl;
     if (debug_level == 1) cout << " bemc_radius " << bemc_radius << endl;
 
+    TrackTowerMatcher matched_tower{}; // keep track of hadronE and towerEt matches
+    // Fill the vector of mupicoTracks
+    vector<FloatInt>    pt_to_index;   // sort for index of tracks to pT high to low
+    map<int,int>        index_to_id;   // the id of each track in tracks
     for (int i_track{0}; i_track< (int) mMuDst->numberOfPrimaryTracks(); ++i_track){
         StMuTrack* muTrack = (StMuTrack*) mMuDst->primaryTracks(i_track);
         if ( muTrack->charge() == -9999 ) continue;
+
+        bool pass_cuts = true;
+        short id = muTrack->id();
+        id_set.insert(id);
+
+        // two cuts that results in an id of -1:
+        // The track exists, but it is not worth keeping
         double eta { muTrack->eta() };
         if (TMath::Abs(eta) > 1.) continue;
-        int nHitsFit { muTrack->nHitsFit() };
-        int nHitsPoss { muTrack->nHitsPoss() };
-        int nHitsdEdx { muTrack->nHitsDedx() };
-        float nHitsRat { static_cast<float>(nHitsFit)/nHitsPoss};
-        if (nHitsRat < 0.52 || nHitsFit < 15) continue;
-        StThreeVectorF dcaGlobal = muTrack->dcaGlobal();
-        double dcaXYZ = dcaGlobal.mag();
-        double dcaXY  = dcaGlobal.perp();
-        if (dcaXYZ > 3.) continue;
         double pt { muTrack->pt() };
-        if (debug_level == 1) cout << " pt " << pt << endl;
         if (pt < 0.2) continue;
-        if (debug_level == 1) cout << " debug C1 " << endl;
 
-        bool isTofMatch = (muTrack->index2BTofHit() >= 0);
-        bool isBEMCMatch = (muTrack->matchBEMC()); // update later
-        if (debug_level == 1) cout << " isTofMatch " << isTofMatch << endl;
-
-        int  i_tower = 0; // 0 for no match, <0 for near match, >0 exact match
+        // otherwise, keep the track, but perhaps with a pass_cuts = false
         StMuTrack* gTrk = (StMuTrack*)muTrack->globalTrack();
         if (!gTrk) {
             cout << "Error: missing global track for primary"<<endl;
             continue;
         }
+        int nHitsFit { gTrk->nHitsFit(kTpcId) };
+        int nHitsPoss { gTrk->nHitsPoss(kTpcId) };
+        int nHitsdEdx { gTrk->nHitsDedx() };
+        /* float nHitsRat { static_cast<float>(nHitsFit)/nHitsPoss}; */
+        /* if (nHitsRat < 0.52 || nHitsFit < 10) pass_cuts = false; */
+        if (nHitsFit < 15) pass_cuts = false;
 
-        // Do the track matching
-        
+        StThreeVectorF dcaGlobal = muTrack->dcaGlobal();
+        double dcaXYZ = dcaGlobal.mag();
+        double dcaXY  = dcaGlobal.perp();
+
+        if (dcaXYZ > 3.) pass_cuts = false;//continue;
+        if (debug_level == 1) cout << " pt " << pt << endl;
+
+        bool isTofMatch = (muTrack->index2BTofHit() >= 0);
+        bool isBEMCMatch = (muTrack->matchBEMC()); // update later
+        if (debug_level == 1) cout << " isTofMatch " << isTofMatch << endl;
+
+        int  towerID = 0; // 0 for no match, <0 for near match, >0 exact match, +/- 1000
+
+        // --------------------------------------
+        // BEGIN: Do the track to tower matching
         //get inner radius of BEMC
         StThreeVectorD bemc_pos, bemc_mom;
-
         // BEMC hardware indices 
         Int_t h_m, h_e, h_s = 0;
-
         Int_t tow_id = 0;
         Bool_t close_match = false;
 
@@ -123,9 +203,9 @@ vector<mupicoTrack> P18h_mupicoTrackTowerMaker::makeVec_mupicoTracks(TrackTowerM
                     mBEMCGeom->getId(h_m,h_e,h_s,tow_id);
                     /* bemcExactMatch = !close_match; */
                     if (close_match) {
-                        i_tower = -1*tow_id;
+                        towerID = -1*tow_id;
                     } else {
-                        i_tower = tow_id;
+                        towerID = tow_id;
                     }
                 } else {
                     // Value of the "dead space" per module in phi:
@@ -147,7 +227,7 @@ vector<mupicoTrack> P18h_mupicoTrackTowerMaker::makeVec_mupicoTracks(TrackTowerM
                             h_s != -1 ) {
                         mBEMCGeom->getId(h_m,h_e,h_s,tow_id);
                         /* bemcExactMatch = false; */
-                        i_tower = -1*tow_id;
+                        towerID = -1*tow_id;
                         /* picoTrk->setBEmcMatchedTowerIndex(-1*tow_id); */
                     }
                     else if ( mBEMCGeom->getBin(bemc_pos_shift_neg.phi(),
@@ -156,39 +236,54 @@ vector<mupicoTrack> P18h_mupicoTrackTowerMaker::makeVec_mupicoTracks(TrackTowerM
                             h_s != -1 ) {
                         mBEMCGeom->getId(h_m,h_e,h_s,tow_id);
                         /* bemcExactMatch = false; */
-                        i_tower = -1*tow_id;
+                        towerID = -1*tow_id;
                         /* picoTrk->setBEmcMatchedTowerIndex(-1*tow_id); */
                     }
                 } // else
             } // if ( mBEMCGeom->getBin(bemc_pos.phi(),bemc_pos.pseudoRapidity(),h_m,h_e,h_s) == 0 ) cout << " tow_id " << tow_id << endl;
         } else {
             cout << " warning: fail b/c function mEmcPosition->projTrack failed " << endl;
-            return  vTracks;
+            throw std::runtime_error("fail b/c function mEmcPosition->projTrackfailed");
         }
-        vTracks.push_back({
+        // END: Do the track to tower matching
+        // --------------------------------------
+
+        if (towerID) {
+            int i_check { TMath::Abs(towerID) };
+            if (bad_tower_list(i_check)) {
+                if (towerID>0) towerID += 10000;
+                if (towerID<0) towerID -= 10000;
+            }
+        }
+
+        tracks.push_back({
             static_cast<float>(pt), 
-            static_cast<float>(muTrack->phi()), 
             static_cast<float>(eta), 
+            static_cast<float>(__0to2pi(muTrack->phi())), 
             static_cast<float>(dcaXY), 
             static_cast<float>(dcaXYZ),  // update later XYZ here
             isTofMatch, 
             isBEMCMatch,
-            (short) i_tower,
-            (short) nHitsFit, (short) nHitsPoss, (short) nHitsdEdx
+            (short) towerID,
+            0.,
+            (short) nHitsFit, 
+            (short) nHitsPoss, 
+            (short) nHitsdEdx,
+            pass_cuts
         });
-        if (i_tower != 0 && matched_tower != nullptr) {
-            matched_tower->add_p2_itower(muTrack->p().mag2(), TMath::Abs(i_tower));
-        }
+        pt_to_index.push_back({(float)pt,nTracks});
+        index_to_id[nTracks] = id;
+        ++nTracks;
+
+        if (towerID != 0) matched_tower.add_hadronE_p2(muTrack->p().mag2(), TMath::Abs(towerID));
     }
-    sort(vTracks.begin(), vTracks.end()); // tracks are sorted by pT
-    return vTracks;
+    // Now get the order of indices for the tracsk to be read
+    sort(pt_to_index.begin(), pt_to_index.end()); // tracks are sorted by pT
+    for (auto& p : pt_to_index) pt_track_order.push_back(p.i_val);
+    for (int i{0};i<nTracks;++i) id_to_TrackIndex[index_to_id[pt_track_order[i]]] = i;
 
-};
-
-vector<mupicoTower> P18h_mupicoTrackTowerMaker::makeVec_mupicoTowers(
-        TrackTowerMatcher* matched_tower)
-{
-    vector<mupicoTower> vTowers;
+    // Now fill (and correct for jet matchs, all of the towers)
+    /* vector<mupicoTower> vTowers; */
     const UInt_t   mBEMCModules         = 120;
     const UInt_t   mBEMCTowPerModule    = 20;
     const Int_t    mBEMCSubSections     = 2;
@@ -203,11 +298,11 @@ vector<mupicoTower> P18h_mupicoTrackTowerMaker::makeVec_mupicoTowers(
     /* } */
     
     mBemcTables->loadTables(starDb);
-    StMuDst*         mMuDst         = muDstMaker->muDst();
+    /* StMuDst*         mMuDst         = muDstMaker->muDst(); */
     StEmcCollection* mEmcCollection = (StEmcCollection*) mMuDst->emcCollection();
     if (mEmcCollection == nullptr) {
-        cout << "Fatal error in P18h_mupicoTrackTowerMaker: can't get EmcCollection." << endl;
-        return vTowers;
+        throw std::runtime_error("Fatal error in SL18h_muTrackTowerMaker:"
+                "can't get EmcCollection.");
     }
     StEmcDetector* mBEMC = mEmcCollection->detector(kBarrelEmcTowerId);
 
@@ -226,7 +321,6 @@ vector<mupicoTower> P18h_mupicoTrackTowerMaker::makeVec_mupicoTowers(
             int towerID, towerStatus;
             mBEMCGeom->getId((int)tow->module(), (int)tow->eta(), (int)tow->sub(), towerID);
             /* cout << Form(" A towerID: %4i",towerID) << endl; */
-            /* if (bad_tower_list.has(towerID)) continue; */
             if (bad_tower_list.has(towerID)) continue;
             // { cout << " ALEPH bad tower list: " << towerID << endl; continue;}
             mBemcTables->getStatus(BTOW, towerID, towerStatus);
@@ -240,23 +334,51 @@ vector<mupicoTower> P18h_mupicoTrackTowerMaker::makeVec_mupicoTowers(
             if (towerEnergy < minTowEnergy) continue;
             Float_t towerEta, towerPhi;
             mBEMCGeom->getEtaPhi(towerID, towerEta, towerPhi);
-            while (towerPhi < 0.) towerPhi += TwoPi;
+            while (towerPhi < 0.)    towerPhi += TwoPi;
             while (towerPhi > TwoPi) towerPhi -= TwoPi;
 
             double towerEt { towerEnergy / TMath::CosH(towerEta) };
-            float hadron_corr=0.;
-            if (matched_tower != nullptr) hadron_corr = matched_tower->sum_matched_E(towerID);
+            if (towerEt < minTowEnergy) continue;
+            float hadron_corr = matched_tower.get_hadronE(towerID);
+            if (hadron_corr) hadron_corr /= TMath::CosH(towerEta);
 
-            vTowers.push_back({
+            towers.push_back({
                     static_cast<float>(towerEt), 
-                    static_cast<float>(towerPhi),
                     static_cast<float>(towerEta), 
+                    static_cast<float>(towerPhi),
                     hadron_corr,
                     (short) towerID
             });
+            matched_tower.add_towerEt(towerID, towerEt);
         }
     }
-    sort(vTowers.begin(), vTowers.end()); // towers are sorted by Et
-    return vTowers;
+    sort(towers.begin(), towers.end()); // towers are sorted by Et
+    nTowers = towers.size();
 
+    // go back and add track tower energies
+    for (int i{0}; i<TMath::Abs(nTracks); ++i) {
+        int towerID { TMath::Abs(tracks[i].towerID) };
+        if (towerID) {
+            tracks[i].towerEt = matched_tower.get_towerEt(towerID);
+        }
+    }
+
+    if (nTracks > MaxNTracks) {
+        cout << " Warning! More tracks found that MaxNTracks allowed." << endl
+             << " found("<<nTracks<<") Allowed ("<<MaxNTracks<<")" << endl
+             << " Keeping allowed number of highest pT tracks." << endl;
+        log  << " Warning! More tracks found that MaxNTracks allowed." << endl
+             << " found("<<nTracks<<") Allowed ("<<MaxNTracks<<")" << endl
+             << " Keeping allowed number of highest pT tracks." << endl;
+        nTracks = MaxNTracks;
+    }
+    if (nTowers > MaxNTowers) {
+        cout << " Warning! More towers found that MaxNTowers allowed." << endl
+             << " found("<<nTowers<<") Allowed ("<<MaxNTowers<<")" << endl
+             << " Keeping allowed number of highest pT towers." << endl;
+        log  << " Warning! More towers found that MaxNTowers allowed." << endl
+             << " found("<<nTowers<<") Allowed ("<<MaxNTowers<<")" << endl
+             << " Keeping allowed number of highest pT towers." << endl;
+        nTowers = MaxNTowers;
+    }
 };

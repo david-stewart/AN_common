@@ -62,19 +62,24 @@ def read_SumsOutFile(file_name):
 
     # Get everything else
     if 'We END' in lines[-1]:
-        time_strB = lines[-1].split()[-3]
-        day_strB = lines[-1].split()[-4]
-        hrB = int(time_strB.split(':')[0])
-        mmB = int(time_strB.split(':')[1])
-        ssB = int(time_strB.split(':')[2])
-        time_end = hrB*3600+mmB*60+ssB
-        time = time_end - time_start
-        if day_strB != day_str:
-            time += 24*3600
-        time = '%02i:%02i:%02i'%(time/3600,(time%3600)/60,(time%60))
-        rval['time'] = time
-        rval['status'] = 'good'
-        rval['has_time'] = True
+        try:
+            time_strB = lines[-1].split()[-3]
+            day_strB = lines[-1].split()[-4]
+            hrB = int(time_strB.split(':')[0])
+            mmB = int(time_strB.split(':')[1])
+            ssB = int(time_strB.split(':')[2])
+            time_end = hrB*3600+mmB*60+ssB
+            time = time_end - time_start
+            if day_strB != day_str:
+                time += 24*3600
+            time = '%02i:%02i:%02i'%(time/3600,(time%3600)/60,(time%60))
+            rval['time'] = time
+            rval['status'] = 'good'
+            rval['has_time'] = True
+        except:
+            rval['status'] = 'error'
+            print('failed read: We END in line:')
+            print(lines[-1])
     else:
         rval['has_time'] = False
         rval['status'] = 'failed-no-We-END'

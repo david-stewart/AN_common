@@ -3,3 +3,4 @@ _*
 *.so
 *.pcm
 *.d
+**/*.consign

@@ -41,8 +41,8 @@ struct JetBranchMaker : public TObject {
         double        max_abs_eta_jet = -1.);  // if negative, defaults to 1.-jet_R
 
     void clear(); // clear the internal jet clones
-    void fill(vector<mupicoJet>& particles, bool generate=true); // if calc is true, calculate jets
-    void fill(mupicoJet          particle,  bool generate=false); // if calc is true, calculate jets
+    void fill(vector<Jet>& particles, bool generate=true); // if calc is true, calculate jets
+    void fill(Jet          particle,  bool generate=false); // if calc is true, calculate jets
     void generate(); // generate the jets (and areas, if appropriate)
     
 
@@ -60,8 +60,8 @@ struct JetBranchMaker : public TObject {
 
     // internal values:
     TClonesArray clones;
-    vector<mupicoJet> particles; // collect input particles. 
-                                 // mupicoJet is really just pT, phi, eta
+    vector<Jet> particles; // collect input particles. 
+                                 // Jet is really just pT, phi, eta
     int remove_nhardest_jets;    // to use if calculating areas
 
     /* AreaDefinition area_def; */

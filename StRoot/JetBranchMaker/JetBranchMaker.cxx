@@ -38,7 +38,7 @@ JetBranchMaker::JetBranchMaker(
     ghost_R    { _ghost_R },
     ghost_max_rap { _ghost_max_rap },
 	min_jet_pt {0.2},
-    clones     { calc_areas ? "mupicoJetwArea" : "mupicoJet", static_cast<int>(max_njets) }
+    clones     { calc_areas ? "JetwArea" : "Jet", static_cast<int>(max_njets) }
 {
     if (_jet_algo == "anti-kt" || _jet_algo == "antikt" || _jet_algo == "anti_kt") {
         jet_algo = antikt;
@@ -66,23 +66,23 @@ void JetBranchMaker::clear() {
     particles.clear();
 };
 
-void JetBranchMaker::fill(vector<mupicoJet>& v_part, bool gen) {
+void JetBranchMaker::fill(vector<Jet>& v_part, bool gen) {
     for (auto& p : v_part) particles.push_back(p);
     if (gen) generate();
 };
 
-void JetBranchMaker::fill(mupicoJet p, bool gen) {
+void JetBranchMaker::fill(Jet p, bool gen) {
     particles.push_back(p);
     if (gen) generate();
 };
 
 void JetBranchMaker::generate(){
-    // transfer each mupicoJet into a Pseudojet
+    // transfer each Jet into a Pseudojet
     int index{0};
     vector<PseudoJet> v_input;
     for (auto& p : particles) {
         v_input.push_back(PseudoJet());
-        v_input[index++].reset_PtYPhiM( p.pT, p.eta, p.phi, pi0mass );
+        v_input[index++].reset_PtYPhiM( p.pt, p.eta, p.phi, pi0mass );
     }
    
     fastjet::Selector      jetrap  = fastjet::SelectorAbsEtaMax(max_abs_eta_jet);
@@ -107,11 +107,11 @@ void JetBranchMaker::generate(){
         njets = (jets.size() > max_njets) ? max_njets : jets.size();
         // fill clones
         for (unsigned int i{0}; i<njets; ++i) {
-            mupicoJetwArea* jet = (mupicoJetwArea*) clones.ConstructedAt(i);
+            JetwArea* jet = (JetwArea*) clones.ConstructedAt(i);
             jet->area = jets[i].area();
-            jet->pT = jets[i].perp();
-            jet->phi = jets[i].phi();
+            jet->pt = jets[i].perp();
             jet->eta = jets[i].eta();
+            jet->phi = jets[i].phi();
         }
 
         // Get rho and rho_sigma
@@ -127,10 +127,10 @@ void JetBranchMaker::generate(){
         njets = (jets.size() > max_njets) ? max_njets : jets.size();
         // fill clones
         for (unsigned int i{0}; i<njets; ++i) {
-            mupicoJet* jet = (mupicoJet*) clones.ConstructedAt(i);
-            jet->pT = jets[i].perp();
-            jet->phi = jets[i].phi();
+            Jet* jet = (Jet*) clones.ConstructedAt(i);
+            jet->pt = jets[i].perp();
             jet->eta = jets[i].eta();
+            jet->phi = jets[i].phi();
         }
     }
 };

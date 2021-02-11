@@ -16,24 +16,34 @@
 
 using namespace std;
 
-struct int_double {
+struct IntDouble {
     int i;
     double d;
-    int_double(int, double);
-    int_double();
+    IntDouble(int, double);
+    IntDouble();
 };
 
-struct TrackTowerMatcher : public TObject {
+class TrackTowerMatcher : public TObject {
+    public:
     TrackTowerMatcher();
     ~TrackTowerMatcher();
-    vector<int_double> data; // for pair<i_tower, E>
+
     void clear(); 
-    double sum_matched_E(int i_tower);
-    void add_p2_itower(double p2, int i_tower, double m2=0.0182196); 
 
-    bool is_sorted; // set to false with clear; will self-sort with first sum_E call.
-    /* bool comp(const int i, const pair<int,double>); */
+    void   add_hadronE_p2 (double p2, int i_tower, double m2=0.0182196); 
+    void   add_towerEt    (int i_tower, double Et_uncorr);
 
+    double get_hadronE  (int i_tower);
+    double get_towerEt  (int i_tower);
+
+
+    private:
+    vector<IntDouble> hadronE;//  for pair<i_tower, E from tracks>
+    vector<IntDouble> towerEt;     //  for pair<i_tower, Et uncorrected> for tracks
+
+    bool is_sorted_hadronE; // set to false with clear; 
+    bool is_sorted_towerEt;
+    
     ClassDef (TrackTowerMatcher, 1);
 };
 #endif
