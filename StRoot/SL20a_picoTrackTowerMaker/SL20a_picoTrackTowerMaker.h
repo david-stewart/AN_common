@@ -86,7 +86,6 @@ class SL20a_picoTrackTowerMaker : public TObject {
                 int _MaxNTowers = 400,
                 bool generate_ids = false
         );
-        /* TrackTowerMatcher   matched_tower; */
         void  clear();
         short index_id(int id);
         void  make();

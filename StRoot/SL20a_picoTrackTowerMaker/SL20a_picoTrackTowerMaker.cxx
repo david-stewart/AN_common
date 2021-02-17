@@ -162,7 +162,7 @@ void SL20a_picoTrackTowerMaker::make() {
         if (generate_ids) index_to_id[nTracks] = (short) pico_track->id();
         ++nTracks;
 
-        if (towerID != 0) matched_tower.add_hadronE_p2(Ptrack.Mag2(), TMath::Abs(towerID));
+        /* if (towerID != 0) matched_tower.add_hadronE_p2(Ptrack.Mag2(), TMath::Abs(towerID)); */
     }
 
     // Now get the order of indices for the tracsk to be read
