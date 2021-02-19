@@ -33,7 +33,7 @@ int getMemValue(){ //Note: this value is in KB!
     return result;
 };
 
-MemTimeProgression::MemTimeProgression(int print_int=200) :
+MemTimeProgression::MemTimeProgression(int print_int) :
     nCalls   {0},
     mem0     {0},
     max_mem  {0},

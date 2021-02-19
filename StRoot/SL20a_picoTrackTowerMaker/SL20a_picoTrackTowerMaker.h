@@ -1,7 +1,6 @@
 #ifndef SL20a_picoTrackTowerMaker__h
 #define SL20a_picoTrackTowerMaker__h
 
-#include "StMaker.h"
 #include "StEmcUtil/geometry/StEmcGeom.h"
 #include "TreeObj/TreeObj.h"
 /* #include "StMuDSTMaker/COMMON/StMuDstMaker.h" */

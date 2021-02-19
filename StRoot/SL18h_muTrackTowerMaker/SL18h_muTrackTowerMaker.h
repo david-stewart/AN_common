@@ -1,7 +1,6 @@
 #ifndef SL18h_muTrackTowerMaker__h
 #define SL18h_muTrackTowerMaker__h
 
-#include "StMaker.h"
 #include "StEmcUtil/geometry/StEmcGeom.h"
 #include "TreeObj/TreeObj.h"
 #include "StMuDSTMaker/COMMON/StMuDstMaker.h"
