@@ -177,10 +177,12 @@ void JetBranchMaker::generate(){
                 if (p.pt() >= 0.2) {
                     short index = p.user_index() ;
                     if (index<0) {
+                        jet->index_tower.push_back(-index-1);
                         itow.push_back(-index-1);
                         ++ntow;
                     } else {
                         /* cout << " out: " << index << endl; */
+                        jet->index_track.push_back(index);
                         itrk.push_back(index);
                         ++ntrk;
                     }

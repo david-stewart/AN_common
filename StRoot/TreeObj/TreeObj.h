@@ -130,7 +130,7 @@ class embNeutPart : public TObject {
     float eta;
     float phi;
 
-    ClassDef (embNeutPart,1);
+    ClassDef(embNeutPart,1);
 };
 
 class mupicoEventHeader : public TObject {
@@ -178,6 +178,8 @@ class JetwArea : public TObject {
     float eta;
     float phi;
     float area;
+    vector<short> index_track;
+    vector<short> index_tower;
     JetwArea(float _pt, float _eta, float _phi, float _area);
     JetwArea();
 	ClassDef(JetwArea,1);

@@ -213,7 +213,7 @@ ClassImp(JetwArea)
             float _phi, 
             float _area
             ) :
-        pt{_pt}, eta{_eta}, phi{_phi}, area{_area}
+        pt{_pt}, eta{_eta}, phi{_phi}, area{_area}, index_track{}, index_tower{}
     {};
 
 ClassImp(Jet)
