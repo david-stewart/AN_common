@@ -12,6 +12,7 @@
 #include "TClonesArray.h"
 /* #include "fastjet/config.h" */
 /* #include "fastjet/PseudoJet.hh" */
+/* using fastjet::PseudoJet; */
 
 int parseLine(char* line);
 int getMemValue();
@@ -35,20 +36,22 @@ struct JetBranchMaker : public TObject {
         bool          calc_areas      = false,
         string        jet_algo        = "anti-kt",
         unsigned int  max_njets       = 200,
+        unsigned int  max_nconstituents = 1000,
         double        jet_R           = 0.4,
         double        ghost_R         = 0.01, 
         double        ghost_max_rap   = 4.,
         double        max_abs_eta_jet = -1.);  // if negative, defaults to 1.-jet_R
 
     void clear(); // clear the internal jet clones
-    void fill(vector<Jet>& particles, bool generate=true); // if calc is true, calculate jets
-    void fill(Jet          particle,  bool generate=false); // if calc is true, calculate jets
+    void fill(vector<pair<Jet,int>>& particles); // if calc is true, calculate jets
+    void fill(pair<Jet,int> particle); // if calc is true, calculate jets
     void generate(); // generate the jets (and areas, if appropriate)
     
 
     bool           calc_areas;
     unsigned int   max_njets;
 	unsigned int   njets;
+	unsigned int   max_nconstituents;
     // jet definition parameters:
     jetAlgorithm jet_algo;
     double jet_R;
@@ -56,11 +59,24 @@ struct JetBranchMaker : public TObject {
     double ghost_R;
     double ghost_max_rap;
 	double min_jet_pt;
-    
+
+    int n_tracks;
+    int n_towers;
+    int n_particles;
 
     // internal values:
     TClonesArray clones;
-    vector<Jet> particles; // collect input particles. 
+    TClonesArray clones_index; // constituent index
+    vector<pair<Jet,int>> particles;
+
+    vector<short> itow; 
+    vector<short> i0tow;
+    vector<short> i1tow;
+
+    vector<short> itrk;
+    vector<short> i0trk;
+    vector<short> i1trk;
+
                                  // Jet is really just pT, phi, eta
     int remove_nhardest_jets;    // to use if calculating areas
 

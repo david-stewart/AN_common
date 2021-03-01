@@ -168,7 +168,6 @@ void SL18h_muTrackTowerMaker::make() {
         // if not, track can't be matched.
         // By JetCorr request the global track projection to BEMC is used.
 
-
         if ( mEmcPosition->projTrack(&bemc_pos, &bemc_mom, gTrk, mBField_tesla, bemc_radius) ) {
             if (debug_level == 1) cout << " alpha 0   bemc_pos " << bemc_pos << endl;
             if (debug_level == 1) cout << "  bemc_mom " << bemc_mom << endl;
