@@ -44,7 +44,7 @@ JetBranchMaker::JetBranchMaker(
     /* n_tracks   {0}, */
     /* n_towers   {0}, */
     n_particles {0},
-    clones     { calc_areas ? "JetwArea" : "Jet", static_cast<int>(max_njets) }
+    clones     { calc_areas ? "JetwArea" : "JetnoArea", static_cast<int>(max_njets) }
     /* tower_indices { "constituent_index", static_cast<int>(max_nconstituents) } */
     /* track_indices { "constituent_index", static_cast<int>(max_nconstituents) } */
 {
@@ -61,13 +61,13 @@ JetBranchMaker::JetBranchMaker(
         jet_algo = antikt;
     }
 
-    tree->Branch(Form("%s_itow", name_tag), &itow);
-    tree->Branch(Form("%s_i0tow", name_tag), &i0tow);
-    tree->Branch(Form("%s_i1tow",  name_tag),&i1tow);
+    /* tree->Branch(Form("%s_itow", name_tag), &itow); */
+    /* tree->Branch(Form("%s_i0tow", name_tag), &i0tow); */
+    /* tree->Branch(Form("%s_i1tow",  name_tag),&i1tow); */
 
-    tree->Branch(Form("%s_itrk",  name_tag),&itrk);
-    tree->Branch(Form("%s_i0trk", name_tag), &i0trk);
-    tree->Branch(Form("%s_i1trk",  name_tag),&i1trk);
+    /* tree->Branch(Form("%s_itrk",  name_tag),&itrk); */
+    /* tree->Branch(Form("%s_i0trk", name_tag), &i0trk); */
+    /* tree->Branch(Form("%s_i1trk",  name_tag),&i1trk); */
 
     tree->Branch(Form("%s_njets", name_tag), &njets);
     tree->Branch(name_tag, &clones);
@@ -91,19 +91,19 @@ JetBranchMaker::JetBranchMaker(
 
 void JetBranchMaker::clear() {
     clones.Clear();
-    clones_index.Clear();
+    /* clones_index.Clear(); */
     n_tracks = 0;
     n_towers = 0;
     n_particles = 0;
     particles.clear();
 
-    itow.clear();
-    i0tow.clear();
-    i1tow.clear();
+    /* itow.clear(); */
+    /* i0tow.clear(); */
+    /* i1tow.clear(); */
 
-    itrk.clear();
-    i0trk.clear();
-    i1trk.clear();
+    /* itrk.clear(); */
+    /* i0trk.clear(); */
+    /* i1trk.clear(); */
 };
 
 // NOTE:
@@ -157,14 +157,15 @@ void JetBranchMaker::generate(){
         // fill clones
         /* int cnt_tracks = 0; */
         /* int cnt_towers = 0; */
-        int ntrk = 0;
-        int ntow = 0;
+        /* int ntrk = 0; */
+        /* int ntow = 0; */
         for (unsigned int i{0}; i<njets; ++i) {
-            i0tow.push_back(ntow);
-            i0trk.push_back(ntrk);
+            /* i0tow.push_back(ntow); */
+            /* i0trk.push_back(ntrk); */
 
             /* cout << " jet: " << i << endl; */
             JetwArea* jet = (JetwArea*) clones.ConstructedAt(i);
+            jet->clear(); // required to clear the internal indicees
             jet->area = jets[i].area();
             jet->pt   = jets[i].perp();
             jet->eta  = jets[i].eta();
@@ -178,20 +179,20 @@ void JetBranchMaker::generate(){
                     short index = p.user_index() ;
                     if (index<0) {
                         jet->index_tower.push_back(-index-1);
-                        itow.push_back(-index-1);
-                        ++ntow;
+                        /* itow.push_back(-index-1); */
+                        /* ++ntow; */
                     } else {
                         /* cout << " out: " << index << endl; */
                         jet->index_track.push_back(index);
-                        itrk.push_back(index);
-                        ++ntrk;
+                        /* itrk.push_back(index); */
+                        /* ++ntrk; */
                     }
                 } else {
                     /* cout << " GHOST " << endl; */
                 }
             };
-            i1tow.push_back(ntow);
-            i1trk.push_back(ntrk);
+            /* i1tow.push_back(ntow); */
+            /* i1trk.push_back(ntrk); */
         }
 
 
@@ -207,31 +208,27 @@ void JetBranchMaker::generate(){
         vector<PseudoJet> jets = sorted_by_pt( selection( clustSeq.inclusive_jets(min_jet_pt) ));
         njets = (jets.size() > max_njets) ? max_njets : jets.size();
         // fill clones
-        int ntrk = 0;
-        int ntow = 0;
+        /* int ntrk = 0; */
+        /* int ntow = 0; */
         for (unsigned int i{0}; i<njets; ++i) {
-            Jet* jet = (Jet*) clones.ConstructedAt(i);
+            JetnoArea* jet = (JetnoArea*) clones.ConstructedAt(i);
+            jet->clear();
             jet->pt = jets[i].perp();
             jet->eta = jets[i].eta();
             jet->phi = jets[i].phi();
             auto pieces = jets[i].constituents();
-            /* int ntow = 0; */
             for (auto& p : pieces) {
                 if (p.pt() >= 0.2) {
                     short index = p.user_index() ;
                     if (index<0) {
-                        itow.push_back(-index-1);
-                        ++ntow;
+                        jet->index_tower.push_back(-index-1);
                     } else {
-                        itrk.push_back(index);
-                        ++ntrk;
+                        jet->index_track.push_back(index);
                     }
                 } else {
                     /* cout << " GHOST " << endl; */
                 }
             };
-            i1tow.push_back(ntow);
-            i1trk.push_back(ntrk);
         }
     }
 };

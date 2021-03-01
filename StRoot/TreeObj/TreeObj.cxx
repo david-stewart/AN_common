@@ -1,4 +1,4 @@
-#include "TreeObj.h"
+#include "TreeObj.h" 
 float __0to2pi(float phi){ //  put phi in range 0..2pi
     while (phi< 0 ) phi += __loc_2pi;
     while (phi> __loc_2pi) phi -= __loc_2pi;
@@ -205,8 +205,11 @@ ClassImp(JetwArea)
         pt{0.}, 
         eta{0.}, 
         phi{0.}, 
-        area{0.}
-    {};
+        area{0.},
+        index_track{},
+        index_tower{}
+    { index_track.clear(); index_tower.clear(); };
+    void JetwArea::clear() { index_track.clear(); index_tower.clear(); };
     JetwArea::JetwArea(
             float _pt,
             float _eta,
@@ -214,7 +217,26 @@ ClassImp(JetwArea)
             float _area
             ) :
         pt{_pt}, eta{_eta}, phi{_phi}, area{_area}, index_track{}, index_tower{}
-    {};
+    { index_track.clear(); index_tower.clear(); };
+    JetwArea::~JetwArea() { index_track.clear(); index_tower.clear(); };
+
+ClassImp(JetnoArea)
+    JetnoArea::JetnoArea() :
+        pt{0.}, 
+        eta{0.}, 
+        phi{0.}, 
+        index_track{},
+        index_tower{}
+    { index_track.clear(); index_tower.clear(); };
+    void JetnoArea::clear() { index_track.clear(); index_tower.clear(); };
+    JetnoArea::JetnoArea(
+            float _pt,
+            float _eta,
+            float _phi
+            ) :
+        pt{_pt}, eta{_eta}, phi{_phi},  index_track{}, index_tower{}
+    { index_track.clear(); index_tower.clear(); };
+    JetnoArea::~JetnoArea() { index_track.clear(); index_tower.clear(); };
 
 ClassImp(Jet)
     Jet::Jet() :

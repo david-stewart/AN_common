@@ -180,9 +180,25 @@ class JetwArea : public TObject {
     float area;
     vector<short> index_track;
     vector<short> index_tower;
+    void  clear();
     JetwArea(float _pt, float _eta, float _phi, float _area);
     JetwArea();
+    ~JetwArea();
 	ClassDef(JetwArea,1);
+};
+
+class JetnoArea : public TObject {
+    public:
+    float pt;
+    float eta;
+    float phi;
+    vector<short> index_track;
+    vector<short> index_tower;
+    void  clear();
+    JetnoArea(float _pt, float _eta, float _phi);
+    JetnoArea();
+    ~JetnoArea();
+	ClassDef(JetnoArea,1);
 };
 
 class Jet : public TObject {

@@ -66,16 +66,16 @@ struct JetBranchMaker : public TObject {
 
     // internal values:
     TClonesArray clones;
-    TClonesArray clones_index; // constituent index
+    /* TClonesArray clones_index; // constituent index */
     vector<pair<Jet,int>> particles;
 
-    vector<short> itow; 
-    vector<short> i0tow;
-    vector<short> i1tow;
+    /* vector<short> itow; */ 
+    /* vector<short> i0tow; */
+    /* vector<short> i1tow; */
 
-    vector<short> itrk;
-    vector<short> i0trk;
-    vector<short> i1trk;
+    /* vector<short> itrk; */
+    /* vector<short> i0trk; */
+    /* vector<short> i1trk; */
 
                                  // Jet is really just pT, phi, eta
     int remove_nhardest_jets;    // to use if calculating areas
