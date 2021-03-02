@@ -43,7 +43,7 @@ JetBranchMaker::JetBranchMaker(
 	min_jet_pt {0.2},
     /* n_tracks   {0}, */
     /* n_towers   {0}, */
-    n_particles {0},
+    /* n_particles {0}, */
     clones     { calc_areas ? "JetwArea" : "JetnoArea", static_cast<int>(max_njets) }
     /* tower_indices { "constituent_index", static_cast<int>(max_nconstituents) } */
     /* track_indices { "constituent_index", static_cast<int>(max_nconstituents) } */
@@ -92,9 +92,9 @@ JetBranchMaker::JetBranchMaker(
 void JetBranchMaker::clear() {
     clones.Clear();
     /* clones_index.Clear(); */
-    n_tracks = 0;
-    n_towers = 0;
-    n_particles = 0;
+    /* n_tracks = 0; */
+    /* n_towers = 0; */
+    /* n_particles = 0; */
     particles.clear();
 
     /* itow.clear(); */

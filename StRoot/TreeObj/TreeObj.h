@@ -184,7 +184,7 @@ class JetwArea : public TObject {
     JetwArea(float _pt, float _eta, float _phi, float _area);
     JetwArea();
     ~JetwArea();
-	ClassDef(JetwArea,1);
+	ClassDef(JetwArea,2);
 };
 
 class JetnoArea : public TObject {
