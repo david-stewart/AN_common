@@ -8,6 +8,8 @@
 
 // determine how much memory has been used
 
+#define PI_MASS2 0.01947978
+
 #include "stdlib.h"
 #include "stdio.h"
 #include <vector>
@@ -30,7 +32,7 @@ class TrackTowerMatcher : public TObject {
 
     void clear(); 
 
-    void   add_hadronE_p2 (double p2, int i_tower, double m2=0.0182196); 
+    void   add_hadronE_p2 (double p2, int i_tower, double m2=PI_MASS2);
     void   add_towerEt    (int i_tower, double Et_uncorr);
 
     double get_hadronE  (int i_tower);

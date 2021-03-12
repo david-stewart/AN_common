@@ -69,7 +69,7 @@ JetBranchMaker::JetBranchMaker(
     /* tree->Branch(Form("%s_i0trk", name_tag), &i0trk); */
     /* tree->Branch(Form("%s_i1trk",  name_tag),&i1trk); */
 
-    tree->Branch(Form("%s_njets", name_tag), &njets);
+    /* tree->Branch(Form("%s_njets", name_tag), &njets); */
     tree->Branch(name_tag, &clones);
 
 
@@ -126,7 +126,7 @@ void JetBranchMaker::generate(){
     for (auto& pp : particles) {
         auto& p = pp.first;
         v_particles.push_back(PseudoJet());
-        v_particles[index].reset_PtYPhiM( p.pt, p.eta, p.phi, pi0mass );
+        v_particles[index].reset_PtYPhiM( p.pt, p.eta, p.phi, PI_MASS );
         v_particles[index].set_user_index(pp.second);
         /* cout << " set: " << pp.second << endl; */
         ++index;
@@ -152,7 +152,7 @@ void JetBranchMaker::generate(){
         );
         fastjet::ClusterSequenceArea clustSeq(v_particles, jet_def, area_def);
         vector<PseudoJet> jets = sorted_by_pt( selection( clustSeq.inclusive_jets(min_jet_pt) ));
-        njets = (jets.size() > max_njets) ? max_njets : jets.size();
+        unsigned int njets = (jets.size() > max_njets) ? max_njets : jets.size();
 
         // fill clones
         /* int cnt_tracks = 0; */
@@ -206,7 +206,7 @@ void JetBranchMaker::generate(){
     } else {
         fastjet::ClusterSequence clustSeq(v_particles, jet_def);
         vector<PseudoJet> jets = sorted_by_pt( selection( clustSeq.inclusive_jets(min_jet_pt) ));
-        njets = (jets.size() > max_njets) ? max_njets : jets.size();
+        unsigned int njets = (jets.size() > max_njets) ? max_njets : jets.size();
         // fill clones
         /* int ntrk = 0; */
         /* int ntow = 0; */

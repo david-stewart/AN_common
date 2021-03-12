@@ -38,11 +38,10 @@ class SL20a_picoTrackTowerMaker : public TObject {
         StPicoDstMaker* picoMaker;
         IntList&        bad_tower_list;
         ofstream&       log;
-        // BEAR
         /* StEmcGeom*     mBEMCGeom; */
         /* StEmcPosition* mEmcPosition; */
-        /* St_db_Maker*   starDb; */
-        /* StBemcTables*  mBemcTables; */
+        St_db_Maker*   starDb;
+        StBemcTables*  mBemcTables;
     public:
         int debug_level;
     private:
@@ -79,7 +78,7 @@ class SL20a_picoTrackTowerMaker : public TObject {
                 StPicoDstMaker*, 
                 IntList& bad_tower_list, 
                 ofstream& log, 
-                /* St_db_Maker* _starDb, */
+                St_db_Maker* _starDb,
                 int debug_level = 0,
                 int _MaxNTracks = 200,
                 int _MaxNTowers = 400,

@@ -25,7 +25,8 @@ using namespace std;
 // ennumeartion jetAlgorithm
 struct JetBranchMaker : public TObject {
     /* const double PI0MASS2   { 0.0182196 }; */
-    const double pi0mass = 0.13498;
+    const double PI_MASS = 0.13957;
+
     enum jetAlgorithm { antikt, kt, cambridge };
     // Initialize with a TTree*, a name, and jet parameters, and it will make
     // and fill jets into that TTree with lists of fed in particles
@@ -50,7 +51,7 @@ struct JetBranchMaker : public TObject {
 
     bool           calc_areas;
     unsigned int   max_njets;
-	unsigned int   njets;
+	/* unsigned int   njets; */
 	unsigned int   max_nconstituents;
     // jet definition parameters:
     jetAlgorithm jet_algo;
@@ -86,5 +87,6 @@ struct JetBranchMaker : public TObject {
     float rho_sigma;
 
     ClassDef (JetBranchMaker,1);
+
 };
 #endif

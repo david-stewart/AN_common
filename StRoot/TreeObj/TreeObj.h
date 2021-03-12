@@ -163,6 +163,14 @@ class mupicoEventHeader : public TObject {
     int    ZdcSumAdcEast;
     int    ZdcSumAdcWest;
 
+    short  ZdcSmdEastHorizontal[8];
+    short  ZdcSmdEastVertical[8];
+    short  ZdcSmdWestHorizontal[8];
+    short  ZdcSmdWestVertical[8];
+
+    short  EastBBC[24];
+    short  WestBBC[24];
+
     ClassDef(mupicoEventHeader,1);
 };
 

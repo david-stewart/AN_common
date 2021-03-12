@@ -14,21 +14,21 @@ bool FloatInt::operator < (const FloatInt& rhs) const { return f_val > rhs.f_val
 
 SL20a_picoTrackTowerMaker::SL20a_picoTrackTowerMaker (
         StPicoDstMaker* _picoMaker,
-        IntList&      _bad_tower_list,
-        ofstream&     _log,
-        /* St_db_Maker*  _starDb, */
-        int           _debug_level,
-        int _MaxNTracks,
-        int _MaxNTowers,
-        bool _generate_ids
+        IntList&        _bad_tower_list,
+        ofstream&       _log,
+        St_db_Maker*    _starDb,
+        int             _debug_level,
+        int             _MaxNTracks,
+        int             _MaxNTowers,
+        bool            _generate_ids
 ) :
     picoMaker    {_picoMaker},
     bad_tower_list(_bad_tower_list),
     log           (_log),
     /* mBEMCGeom     {StEmcGeom::getEmcGeom("bemc")}, */
     /* mEmcPosition  { new StEmcPosition }, */
-    /* starDb        { _starDb }, */
-    /* mBemcTables   {new StBemcTables}, */
+    starDb        { _starDb },
+    mBemcTables   {new StBemcTables},
     debug_level   {_debug_level},
     MaxNTracks    {_MaxNTracks},
     MaxNTowers    {_MaxNTowers},
@@ -111,7 +111,7 @@ void SL20a_picoTrackTowerMaker::make() {
         float eta  { static_cast<float>(Ptrack.PseudoRapidity()) };
         if (TMath::Abs(eta) > 1.) continue;
         float pt {(float) Ptrack.Perp() };
-        if (pt < 0.2) continue;
+        if (pt < 0.2 || pt > 30.) continue;
         if (generate_ids)  id_set.insert((short)pico_track->id());
         bool pass_cuts { true };
 
@@ -173,25 +173,53 @@ void SL20a_picoTrackTowerMaker::make() {
     }
 
 
+    mBemcTables->loadTables(starDb);
+    const int detector {1};
     for (int towerID = 1; towerID < 4801; ++towerID){
-		if (bad_tower_list(towerID)) continue;
         StPicoBTowHit* bTowHit = static_cast<StPicoBTowHit*>(picoDst->btowHit(towerID-1)); 
-        if (!bTowHit || bTowHit->isBad())  continue;
 
-        float towerEnergy { (float)bTowHit->energy() };
+        if (!bTowHit) { 
+            if (debug_level > 2) cout << " missing: " << towerID << endl;  
+            continue; 
+        }
+        if (debug_level > 1 && bTowHit->isBad()) cout << " --- isBad: " << towerID << endl;
+        
+        if (debug_level > 2) {
+            bool status0 { mBemcTables->status(detector, towerID)             != 1 };
+            bool status1 { mBemcTables->status(detector, towerID, "pedestal") != 1 };
+            bool status2 { mBemcTables->status(detector, towerID, "gain")     != 1 };
+            bool status3 { mBemcTables->status(detector, towerID, "calib")    != 1 };
+
+            if (status0  || status1 || status2 || status3) cout << Form(" bad: %4i %i %i %i %i || %i",
+                    towerID, status0, status1, status2, status3, bTowHit->isBad()) << endl;
+        }
+
+        if ( 
+                mBemcTables->status(detector, towerID)             != 1
+             || mBemcTables->status(detector, towerID, "pedestal") != 1
+             || mBemcTables->status(detector, towerID, "gain")     != 1
+             || mBemcTables->status(detector, towerID, "calib")    != 1
+        ) { continue; }
+
+		if (bad_tower_list(towerID)) continue;
+
+        // compare the energy
+        double ped  { mBemcTables->pedestal(detector, towerID) };
+        double calib { mBemcTables->calib(detector,   towerID) };
+        double towerEnergy = (bTowHit->adc() - ped)*calib;
+        if (debug_level > 3) {
+            double hitE = bTowHit->energy();
+            cout << Form(" id %5i  %6.3f %6.3f  Delta %6.3f", 
+                    towerID, hitE, towerEnergy, towerEnergy-hitE) << endl;
+        }
+
         const double minTowEnergy {0.2};
-            if (towerEnergy < minTowEnergy) continue;
+        if (towerEnergy < minTowEnergy) continue;
         float xT, yT, zT;
         bemcGeom->getXYZ(towerID, xT, yT, zT);
         TVector3 towLoc {xT, yT, zT};
         TVector3 relPos { towLoc - picoEvent->primaryVertex()   };
         float eta  { static_cast<float>(relPos.PseudoRapidity())};
-
-        /* cout << " // HORSE " << Form(" tower:%4i: z(%f) towerEta",towerID, zT, ) << endl; */
-        /* if (TMath::Abs(eta) > 1.1) { */
-        /*     cout << " // BEAR // " << Form("eta:%f  Vz:%f  TowerZ: %f towerEta: %f", */
-        /*             eta, picoEvent->primaryVertex().z(), zT, towLoc.PseudoRapidity()) << endl; */
-        /*     } */
         float phi  { static_cast<float>(__0to2pi(relPos.Phi())) };
 
         float towerEt = (float) towerEnergy / TMath::CosH(eta);

@@ -199,7 +199,7 @@ void SL18h_muTrackTowerMaker::make() {
                 // the track was not matched to a tower at this radius, the track was projected
                 // into the gap between modules in phi. 
                 if ( h_s != -1 ) {
-                    mBEMCGeom->getId(h_m,h_e,h_s,tow_id);
+                    mBEMCGeom->getId(h_m,h_e,h_s,tow_id); // returns 1-4800
                     /* bemcExactMatch = !close_match; */
                     if (close_match) {
                         towerID = -1*tow_id;
@@ -238,8 +238,8 @@ void SL18h_muTrackTowerMaker::make() {
                         towerID = -1*tow_id;
                         /* picoTrk->setBEmcMatchedTowerIndex(-1*tow_id); */
                     }
-                } // else
-            } // if ( mBEMCGeom->getBin(bemc_pos.phi(),bemc_pos.pseudoRapidity(),h_m,h_e,h_s) == 0 ) cout << " tow_id " << tow_id << endl;
+                } //
+            } //
         } else {
             cout << " warning: fail b/c function mEmcPosition->projTrack failed " << endl;
             throw std::runtime_error("fail b/c function mEmcPosition->projTrackfailed");
@@ -286,7 +286,7 @@ void SL18h_muTrackTowerMaker::make() {
     const UInt_t   mBEMCModules         = 120;
     const UInt_t   mBEMCTowPerModule    = 20;
     const Int_t    mBEMCSubSections     = 2;
-    const int BTOW {1};
+    /* const int      BTOW {1}; */
     /* vector<int> bb; */
 
     /* const double Pi    = 3.1415926535897932384; */
@@ -304,7 +304,8 @@ void SL18h_muTrackTowerMaker::make() {
                 "can't get EmcCollection.");
     }
     StEmcDetector* mBEMC = mEmcCollection->detector(kBarrelEmcTowerId);
-
+    
+    StMuEmcCollection* emc = mMuDst->muEmcCollection();
     for (UInt_t i = 1; i <= mBEMCModules; ++i) {
         StSPtrVecEmcRawHit& mEmcTowerHits = mBEMC->module(i)->hits();
         /* loop over all hits in the module */
@@ -317,18 +318,46 @@ void SL18h_muTrackTowerMaker::make() {
                     || abs(tow->eta())    > mBEMCTowPerModule 
                     || tow->sub()         >  mBEMCSubSections) continue;
 
-            int towerID, towerStatus;
+            int towerID; //, towerStatus;
             mBEMCGeom->getId((int)tow->module(), (int)tow->eta(), (int)tow->sub(), towerID);
             /* cout << Form(" A towerID: %4i",towerID) << endl; */
-            if (bad_tower_list.has(towerID)) continue;
-            // { cout << " ALEPH bad tower list: " << towerID << endl; continue;}
-            mBemcTables->getStatus(BTOW, towerID, towerStatus);
-            /* cout << Form(" B towerID: %4i   towerStatus: %i",towerID, towerStatus) << endl; */
+            if (bad_tower_list.has(towerID)) {
+                /* cout << " this is towerID " << towerID << endl; */
+                continue;
+            }
+            /* mBemcTables->getStatus(BTOW, towerID, towerStatus); */
+            //LION check status against tables:
+            bool check_status;
+            const int detector{1};
+            if ( 
+                       mBemcTables->status(detector, towerID)             == 1
+                    && mBemcTables->status(detector, towerID, "pedestal") == 1
+                    && mBemcTables->status(detector, towerID, "gain")     == 1
+                    && mBemcTables->status(detector, towerID, "calib")    == 1
+               ) check_status = true;
+            if (!check_status) continue;
+            /* else check_status = false; */
+            /* if (check_status != (towerStatus == 1)) cout << " !! not matching bemc status." << endl; */
+            /* if (towerStatus != 1) continue; */
 
-            if (towerStatus != 1) continue;
-            //{ cout << " BETA bad tower status: " << towerID << endl; continue; }
-            /* if (binary_search(bb.begin(), bb.end(), towerID)) cout << " bb : " << towerID << endl; */
-            Float_t towerEnergy = tow->energy();
+            // now check the energy
+            /* Float_t towerEnergy = tow->energy(); */
+            // check the tower energy against the bemc energy
+            
+            // LION: check the energies
+            double ped   { mBemcTables->pedestal(detector, towerID) };
+            double calib { mBemcTables->calib(detector,   towerID) };
+            int adc = emc->getTowerADC(towerID,detector);
+            double towerEnergy = (adc - ped)*calib;
+            /* double LION_E { (adc - ped)*calib }; */
+            /* cout << Form("tower %4i adc: %i   ped:  %5.2f  delta:  %5.2f  calib:  %f", towerID, (int)adc, (double) ped, (adc-ped), calib) << endl; */
+            /* double delta { LION_E - towerEnergy }; */
+            /* if (LION_E > 0.2) */
+            /* cout << Form(" Tower %4i : %5.2f %5.2f  ->  %8.2g", towerID, */ 
+                    /* towerEnergy, LION_E, delta) << endl; */
+
+
+
             const double minTowEnergy {0.2};
             if (towerEnergy < minTowEnergy) continue;
             Float_t towerEta, towerPhi;
@@ -340,6 +369,8 @@ void SL18h_muTrackTowerMaker::make() {
             if (towerEt < minTowEnergy) continue;
             float hadron_corr = matched_tower.get_hadronE(towerID);
             if (hadron_corr) hadron_corr /= TMath::CosH(towerEta);
+
+            /* if (towerID == 2792 || towerID == 1125) cout << " has: " << towerID << endl; */
 
             towers.push_back({
                     static_cast<float>(towerEt), 
