@@ -143,7 +143,7 @@ class mupicoEventHeader : public TObject {
         int _BBC_Ein, int _BBC_Eout,
         int _BBC_Win, int _BBC_Wout,
         float _vzVpd, float _ranking,
-        int _ZdcSumAdcEast, int _ZdcSumAdcWest
+        int _ZdcSumAdcEast, int _ZdcSumAdcWest, short _refMult
     );
 
     int    runId;
@@ -158,7 +158,7 @@ class mupicoEventHeader : public TObject {
     int    BBC_Wout;  // bbc East adc
 
     float  vzVpd;
-    float  ranking;
+    float  ranking; // I only included positive ranking
 
     int    ZdcSumAdcEast;
     int    ZdcSumAdcWest;
@@ -171,7 +171,10 @@ class mupicoEventHeader : public TObject {
     short  EastBBC[24];
     short  WestBBC[24];
 
-    ClassDef(mupicoEventHeader,1);
+    short refMult;
+    // add refMult picoDst->refMult()
+
+    ClassDef(mupicoEventHeader,2);
 };
 
 // better to store the float[24] BBC tiles locally in a tree array

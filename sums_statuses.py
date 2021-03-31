@@ -125,7 +125,7 @@ for f in sums_ofiles:
     name = f.split('/')[-1]
     results[name] = read_SumsOutFile(f)
     if results[name]['status'] == 'good':
-        if not os.path.isfile('_output/v1/%s.root'%name):
+        if not os.path.isfile('_output/v2/%s.root'%name):
             results[name]['status']='failed-no-copy'
 
 n_good = 0

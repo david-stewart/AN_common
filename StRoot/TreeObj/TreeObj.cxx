@@ -166,7 +166,8 @@ ClassImp(mupicoEventHeader)
         vzVpd{0.}, 
         ranking{0.}, 
         ZdcSumAdcEast{0}, 
-        ZdcSumAdcWest{0}
+        ZdcSumAdcWest{0},
+        refMult{0}
     {};
     mupicoEventHeader::mupicoEventHeader(
         int _runId, 
@@ -182,7 +183,8 @@ ClassImp(mupicoEventHeader)
         float _vzVpd, 
         float _ranking,
         int _ZdcSumAdcEast, 
-        int _ZdcSumAdcWest
+        int _ZdcSumAdcWest,
+        short _refMult
     ) :
         runId{_runId}, 
         eventId{_eventId}, 
@@ -197,7 +199,8 @@ ClassImp(mupicoEventHeader)
         vzVpd{_vzVpd}, 
         ranking{_ranking},
         ZdcSumAdcEast{_ZdcSumAdcEast}, 
-        ZdcSumAdcWest{_ZdcSumAdcWest}
+        ZdcSumAdcWest{_ZdcSumAdcWest},
+        refMult{_refMult}
     {};
 
 ClassImp(JetwArea)
