@@ -111,6 +111,10 @@ ClassImp(mupicoTower)
         towerID{_towerID} 
     {};
     bool mupicoTower::operator < (const mupicoTower& rhs) const { return Et > rhs.Et; };
+    float mupicoTower::EtCorr() {
+        const double checkEt { Et-Et_hadroncorr };
+        return (checkEt<0.) ? 0. : checkEt;
+    };
 
 ClassImp(embTrack)
     embTrack::embTrack() :

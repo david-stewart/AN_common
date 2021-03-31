@@ -89,6 +89,7 @@ class mupicoTower : public TObject {
     float   phi;
     float   Et_hadroncorr; // correction from charged tracks. Positive value.
     short   towerID;
+    float   EtCorr();
     bool operator < (const mupicoTower & rhs) const;
 	ClassDef(mupicoTower,1);
 };
